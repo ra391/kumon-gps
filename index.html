@@ -1,6 +1,742 @@
 <!DOCTYPE html>
 <html lang="en">
+<head<!DOCTYPE html>
+<html lang="en">
 <head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Skills GPS — Kumon of Woodbridge/New Haven</title>
+<style>
+  :root{
+    --navy:#1f3a63;
+    --navy-dark:#16294a;
+    --blue:#2f6fb0;
+    --ink:#1b2430;
+    --muted:#6b7785;
+    --line:#dfe4ea;
+    --bg:#eef1f5;
+    --pink:#fcecef;
+    --pink-border:#e9c4cc;
+    --focus:#fff4d6;
+    --focus-border:#e8c766;
+    --ok:#2e7d51;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  .wrap{max-width:1000px; margin:0 auto; padding:16px;}
+
+  /* Header */
+  header.app{
+    background:var(--navy); color:#fff; border-radius:10px;
+    padding:18px 22px; display:flex; justify-content:space-between; align-items:center; gap:16px;
+  }
+  header.app h1{margin:0; font-size:22px; letter-spacing:.3px;}
+  header.app .sub{font-size:12px; opacity:.85; margin-top:2px;}
+  .center-name{font-size:12px; opacity:.9; text-align:right;}
+
+  /* Toolbar */
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; margin:14px 0;
+  }
+  button{
+    font:inherit; cursor:pointer; border:1px solid var(--line);
+    background:#fff; color:var(--ink); padding:9px 14px; border-radius:8px;
+    font-weight:600;
+  }
+  button:hover{border-color:var(--blue); color:var(--blue);}
+  button.primary{background:var(--blue); color:#fff; border-color:var(--blue);}
+  button.primary:hover{background:#27598f; color:#fff;}
+  button.ghost{background:transparent;}
+
+  /* Cards */
+  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:14px;}
+  .card h2{
+    margin:0 0 4px; font-size:16px; color:var(--navy);
+    display:flex; align-items:center; gap:8px;
+  }
+  .step{
+    background:var(--navy); color:#fff; font-size:11px; font-weight:700;
+    padding:2px 8px; border-radius:5px; letter-spacing:.5px;
+  }
+  .hint{color:var(--muted); font-size:12px; font-style:italic; margin:0 0 12px;}
+
+  /* Student row */
+  .student-grid{display:grid; grid-template-columns:2fr 1fr 1.5fr; gap:14px;}
+  label.field{display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.4px;}
+  input[type=text], textarea{
+    width:100%; font:inherit; padding:9px 11px; border:1px solid var(--line);
+    border-radius:8px; color:var(--ink); background:#fff;
+  }
+  input[type=text]:focus, textarea:focus{outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(47,111,176,.12);}
+  textarea{resize:vertical; min-height:64px;}
+  .subject-toggle{display:flex; gap:8px;}
+  .subject-toggle button{flex:1; padding:9px 0;}
+  .subject-toggle button.on{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  /* Priority columns */
+  .counter{
+    margin-left:auto; font-size:12px; font-weight:700; color:var(--muted);
+    background:var(--bg); padding:4px 10px; border-radius:20px;
+  }
+  .counter.good{color:var(--ok); background:#e6f4ec;}
+  .cols{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .col h3{
+    margin:0 0 2px; font-size:13px; color:#fff; background:var(--navy-dark);
+    padding:8px 10px; border-radius:7px 7px 0 0; text-align:center;
+  }
+  .col .ref{font-size:10px; text-align:center; color:var(--muted); margin:0 0 6px; padding:3px;}
+  .col-body{display:flex; flex-direction:column; gap:8px;}
+
+  .item{
+    border:1px solid var(--line); border-radius:8px; padding:10px; background:#fbfcfd;
+    transition:border-color .15s, background .15s;
+  }
+  .item.checked{background:var(--focus); border-color:var(--focus-border);}
+  .item .top{display:flex; gap:8px; align-items:flex-start;}
+  .item input[type=checkbox]{width:18px; height:18px; margin-top:2px; accent-color:var(--blue); cursor:pointer; flex-shrink:0;}
+  .item .label{font-weight:600; font-size:14px; cursor:pointer;}
+  .item .strat{display:none; margin-top:8px;}
+  .item.checked .strat{display:block;}
+  .item .strat label{font-size:10px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:.4px;}
+  .item .strat textarea{min-height:48px; font-size:13px; margin-top:3px; background:#fff;}
+
+  .add-own{margin-top:8px;}
+  .add-own input{font-size:13px;}
+
+  /* Routine + first day (reference) */
+  .pink-card{background:var(--pink); border-color:var(--pink-border);}
+  .pink-card h2{color:#9a3b50;}
+  .routine-grid, .day-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .routine-grid .opt, .day-grid .opt{display:flex; gap:8px; align-items:flex-start; font-size:13px;}
+  .day-grid .opt{align-items:center;}
+  .num{background:#9a3b50; color:#fff; width:20px; height:20px; border-radius:50%; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+
+  footer.app{text-align:center; color:var(--muted); font-size:12px; padding:10px 0 30px;}
+
+  .saved-bar{font-size:13px; color:var(--ok); font-weight:600; min-height:18px; margin-left:6px;}
+
+  /* Sync bar */
+  .syncbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; margin-bottom:14px; font-size:13px;
+  }
+  .dot{width:11px; height:11px; border-radius:50%; background:#c0392b; flex-shrink:0;}
+  .dot.on{background:var(--ok);}
+  .dot.sync{background:#e6a700; animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:.35;}}
+  #syncText{color:var(--ink);}
+  .syncbar button{padding:6px 11px; font-size:12px;}
+
+  /* Dashboard table */
+  .dash-table{width:100%; border-collapse:collapse; font-size:14px;}
+  .dash-table th{
+    background:var(--navy); color:#fff; text-align:left; padding:10px 12px; font-size:12px;
+    text-transform:uppercase; letter-spacing:.4px; position:sticky; top:0;
+  }
+  .dash-table th:first-child{border-radius:7px 0 0 0;}
+  .dash-table th:last-child{border-radius:0 7px 0 0;}
+  .dash-table td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .dash-table tr.row{cursor:pointer;}
+  .dash-table tr.row:hover td{background:#f3f8fd;}
+  .dash-name{font-weight:700; color:var(--navy); font-size:15px;}
+  .pill{
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px;
+    background:#e8eef6; color:var(--navy); margin-right:4px;
+  }
+  .pill.math{background:#e6f0fb; color:#225a96;}
+  .pill.reading{background:#fdeee6; color:#a85a2a;}
+  .skill-chip{
+    display:block; margin:3px 0; padding:6px 9px; background:var(--focus);
+    border:1px solid var(--focus-border); border-radius:6px; font-size:13px;
+  }
+  .skill-chip .how{display:block; font-size:11px; color:var(--muted); margin-top:1px;}
+  .skill-chip.none{background:#f6f7f9; border-color:var(--line); color:var(--muted); font-style:italic;}
+  .row-actions{white-space:nowrap;}
+  .row-actions button{padding:5px 9px; font-size:12px; margin:0 2px;}
+  .btn-del:hover{border-color:#c0392b; color:#c0392b;}
+
+  @media (max-width:760px){
+    .student-grid{grid-template-columns:1fr;}
+    .cols{grid-template-columns:1fr;}
+    .routine-grid, .day-grid{grid-template-columns:1fr;}
+    header.app{flex-direction:column; align-items:flex-start;}
+    .center-name{text-align:left;}
+  }
+
+  /* Print */
+  @media print{
+    body{background:#fff;}
+    .toolbar, .add-own, button{display:none !important;}
+    .card{break-inside:avoid; border-color:#ccc;}
+    .item:not(.checked){display:none;}     /* print only chosen focus areas */
+    .item .strat{display:block;}
+    .col:has(.item.checked) {}
+    header.app{background:var(--navy) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .item.checked{background:var(--focus) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .dash-table th{background:var(--navy) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .skill-chip{background:var(--focus) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .row-actions{display:none !important;}
+    .dash-table tr{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app">
+    <div>
+      <h1>📍 The Skills GPS</h1>
+      <div class="sub">Vision → Clarity &amp; Execution · 60-Second Planning Tool</div>
+    </div>
+    <div class="center-name">Kumon of Woodbridge / New Haven<br><span id="todayLabel"></span></div>
+  </header>
+
+  <div class="toolbar" id="editorToolbar">
+    <button class="primary" onclick="saveStudent()">💾 Save Student</button>
+    <button onclick="showDashboard()">👥 All Students (<span id="rosterCount">0</span>)</button>
+    <button onclick="newPlan()">➕ New / Clear</button>
+    <button onclick="copyShareLink()">🔗 Copy Share Link</button>
+    <button onclick="window.print()">🖨️ Print / Save PDF</button>
+    <button class="ghost" onclick="exportCSV()">⬇️ Export CSV</button>
+    <span class="saved-bar" id="savedBar"></span>
+  </div>
+
+  <div class="toolbar" id="dashToolbar" style="display:none;">
+    <button class="primary" onclick="showEditor()">✏️ Back to Editor</button>
+    <button onclick="newPlan(false, true)">➕ New Student</button>
+    <button onclick="window.print()">🖨️ Print This View</button>
+    <button class="ghost" onclick="exportAllCSV()">⬇️ Export All (CSV)</button>
+    <span class="saved-bar" id="dashBar"></span>
+  </div>
+
+  <!-- Sync status bar (shown in both views) -->
+  <div class="syncbar" id="syncbar">
+    <span id="syncDot" class="dot off"></span>
+    <span id="syncText">Not connected — students save only on this device.</span>
+    <button id="syncBtn" onclick="connectSheet()">☁️ Connect Google Sheet</button>
+    <button id="syncRefresh" onclick="syncPull(true)" style="display:none;">🔄 Refresh</button>
+    <button id="syncDisc" class="ghost" onclick="disconnectSheet()" style="display:none;">Disconnect</button>
+  </div>
+
+  <div id="editorView">
+  <!-- Student header -->
+  <div class="card">
+    <div class="student-grid">
+      <div>
+        <label class="field" for="student">Student Name</label>
+        <input type="text" id="student" placeholder="Type student's name" oninput="touch()" />
+      </div>
+      <div>
+        <label class="field">Subject</label>
+        <div class="subject-toggle">
+          <button type="button" id="subjMath" onclick="setSubject('Math')">Math</button>
+          <button type="button" id="subjReading" onclick="setSubject('Reading')">Reading</button>
+        </div>
+      </div>
+      <div>
+        <label class="field" for="starting">Starting Point</label>
+        <input type="text" id="starting" placeholder="e.g. Level 3A" oninput="touch()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1 Vision -->
+  <div class="card">
+    <h2><span class="step">STEP 1</span> 30-Day Vision</h2>
+    <p class="hint">What does success look like? Describe behaviors, not levels. (Instructor decides)</p>
+    <textarea id="vision" placeholder="In 30 days, this student will…" oninput="touch()"></textarea>
+  </div>
+
+  <!-- Step 2 Priorities -->
+  <div class="card">
+    <h2><span class="step">STEP 2</span> Priority &amp; Instruction
+      <span class="counter" id="counter">0 focus areas</span>
+    </h2>
+    <p class="hint">Check the <b>2 problem areas</b> to focus on. The suggested strategy appears — edit it freely. (Instructor selects → Assistant executes)</p>
+    <div class="cols" id="cols"></div>
+  </div>
+
+  <!-- Step 3 Checkpoints -->
+  <div class="card">
+    <h2><span class="step">STEP 3</span> Checkpoints</h2>
+    <p class="hint">How and when will you check if the plan is working? (Instructor monitors and adjusts)</p>
+    <textarea id="checkpoints" placeholder="Observe assistant? Check KC Playback? Parent communication? OJT coaching?" oninput="touch()"></textarea>
+  </div>
+
+  <!-- Reference: Routine + First Day -->
+  <div class="card pink-card">
+    <h2>🔄 Make It Stick &amp; 🌟 First Day Tone <span style="font-weight:400;font-size:12px;color:#9a3b50;">(reference)</span></h2>
+    <div class="routine-grid">
+      <div class="opt"><span>○</span><div><b>Pre-Class Huddle</b> — 2-min stand-up with your assistant; use the GPS as talking points.</div></div>
+      <div class="opt"><span>○</span><div><b>Vinyl System</b> — print the GPS into the student's vinyl, visible to any assistant.</div></div>
+      <div class="opt"><span>○</span><div><b>Class Navi</b> — input 2–3 priorities &amp; instruction in Class Notes.</div></div>
+      <div class="opt"><span>○</span><div><b>Your Own</b> — whatever routine fits your center.</div></div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--pink-border);margin:14px 0;">
+    <div class="day-grid">
+      <div class="opt"><span class="num">1</span>Greet the student by name; introduce yourself warmly.</div>
+      <div class="opt"><span class="num">2</span>Guide them calmly to their seat; explain first work.</div>
+      <div class="opt"><span class="num">3</span>Give specific praise early — tied to effort.</div>
+      <div class="opt"><span class="num">4</span>Homework handoff — walk through tomorrow's work + a goal.</div>
+      <div class="opt"><span class="num">5</span>Close with the parent — share what went well, next steps.</div>
+      <div class="opt"><span class="num">6</span>Check one homework completion on 2nd class.</div>
+    </div>
+  </div>
+  </div><!-- /editorView -->
+
+  <!-- Dashboard: all students in one view -->
+  <div id="dashboardView" style="display:none;">
+    <div class="card">
+      <h2 style="margin-bottom:10px;">👥 All Students — Skills In Progress</h2>
+      <p class="hint">Everyone you've saved, with the focus skills you're working on. Click a row to open and edit.</p>
+      <div id="dashEmpty" style="display:none; color:var(--muted); padding:18px 4px;">
+        No students saved yet. Go to the editor, fill one in, and click <b>💾 Save Student</b>.
+      </div>
+      <div id="dashTableWrap" style="overflow-x:auto;">
+        <table class="dash-table" id="dashTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app">The Skills GPS · saved in this browser · share via link or print</footer>
+</div>
+
+<script>
+/* ---------- Priority data (from the Skills GPS sheet) ---------- */
+const CATEGORIES = [
+  {
+    title:"Proper Study Approach",
+    ref:"IP 5.1 p. 17",
+    items:[
+      {label:"Studies with concentration", strat:"Point to directions / examples"},
+      {label:"Reads and follows instructions/examples", strat:"Remind: “Read the directions and examples first”"},
+      {label:"Writes neatly and carefully", strat:"Model the correct stroke order and size"},
+      {label:"Erases only what is necessary", strat:"Find the mistake first, before erasing"},
+    ]
+  },
+  {
+    title:"Work Skills",
+    ref:"UPIM 4.1 p. 27 | UPIR 4.1 p. 26",
+    items:[
+      {label:"Pencil keeps moving; works quickly", strat:"Pen Pace (instructor/assistant sets rhythm)"},
+      {label:"Eyes on paper", strat:"Minimize or postpone conversation"},
+      {label:"Answers questions in sequence", strat:"Explain “why”; Model how; Pen Pace"},
+      {label:"Completes assignment within SCT", strat:"Time Goal: “Let’s finish this page in…”; Timer"},
+    ]
+  },
+  {
+    title:"Study Attitude",
+    ref:"UPIM 7.2 p. 46 | UPIR 6.3 p. 39",
+    items:[
+      {label:"Quick to begin studying", strat:"Communicate expectation; center routine"},
+      {label:"Maintains a positive attitude", strat:"Praise effort & specific progress"},
+      {label:"Attempts problems independently", strat:"Encourage: “Put down what you think”"},
+      {label:"Give it a try", strat:"Give another example by solving next problem"},
+      {label:"Consistent attendance / HW", strat:"Celebrate milestones together"},
+      {label:"Interested in progress / goals", strat:"Show upcoming worksheets (build curiosity)"},
+    ]
+  }
+];
+
+const RECOMMENDED = 2;
+let subject = "";
+
+/* ---------- Build the priority columns ---------- */
+function buildCols(){
+  const wrap = document.getElementById('cols');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach((cat, ci) => {
+    const col = document.createElement('div');
+    col.className = 'col';
+    col.innerHTML = `<h3>${cat.title}</h3><div class="ref">${cat.ref}</div>`;
+    const body = document.createElement('div');
+    body.className = 'col-body';
+    cat.items.forEach((it, ii) => body.appendChild(makeItem(ci, ii, it.label, it.strat)));
+    // one custom blank per column
+    body.appendChild(makeCustom(ci));
+    col.appendChild(body);
+    wrap.appendChild(col);
+  });
+}
+
+function makeItem(ci, ii, label, strat){
+  const id = `c${ci}_${ii}`;
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.dataset.id = id;
+  div.dataset.label = label;
+  div.innerHTML = `
+    <div class="top">
+      <input type="checkbox" id="${id}" onchange="toggleItem(this)">
+      <label class="label" for="${id}">${label}</label>
+    </div>
+    <div class="strat">
+      <label>Suggested strategy — edit as needed</label>
+      <textarea oninput="touch()">${strat}</textarea>
+    </div>`;
+  return div;
+}
+
+function makeCustom(ci){
+  const div = document.createElement('div');
+  div.className = 'item add-own';
+  div.dataset.custom = "1";
+  const id = `custom${ci}`;
+  div.innerHTML = `
+    <div class="top">
+      <input type="checkbox" id="${id}" onchange="toggleItem(this)">
+      <input type="text" placeholder="✏️ Add your own priority…" oninput="touch()" style="font-weight:600;">
+    </div>
+    <div class="strat">
+      <label>Your strategy</label>
+      <textarea oninput="touch()" placeholder="How the assistant will help…"></textarea>
+    </div>`;
+  return div;
+}
+
+function toggleItem(cb){
+  cb.closest('.item').classList.toggle('checked', cb.checked);
+  updateCounter();
+  touch();
+}
+
+function updateCounter(){
+  const n = document.querySelectorAll('.item.checked').length;
+  const c = document.getElementById('counter');
+  c.textContent = n === 1 ? '1 focus area' : `${n} focus areas`;
+  c.classList.toggle('good', n === RECOMMENDED);
+}
+
+function setSubject(s){
+  subject = (subject === s) ? "" : s;
+  document.getElementById('subjMath').classList.toggle('on', subject==='Math');
+  document.getElementById('subjReading').classList.toggle('on', subject==='Reading');
+  touch();
+}
+
+/* ---------- Collect / restore state ---------- */
+function collect(){
+  const items = [];
+  document.querySelectorAll('.item').forEach(el => {
+    const cb = el.querySelector('input[type=checkbox]');
+    const ta = el.querySelector('.strat textarea');
+    const custom = el.dataset.custom === "1";
+    const label = custom ? (el.querySelector('input[type=text]').value || "") : el.dataset.label;
+    items.push({ id: cb.id, custom, label, checked: cb.checked, strat: ta.value });
+  });
+  return {
+    student: val('student'),
+    subject,
+    starting: val('starting'),
+    vision: val('vision'),
+    checkpoints: val('checkpoints'),
+    items,
+    date: document.getElementById('todayLabel').textContent
+  };
+}
+
+function restore(d){
+  setVal('student', d.student||'');
+  setVal('starting', d.starting||'');
+  setVal('vision', d.vision||'');
+  setVal('checkpoints', d.checkpoints||'');
+  subject = "";
+  if(d.subject) setSubject(d.subject);
+  (d.items||[]).forEach(saved => {
+    const el = document.querySelector(`.item [id="${saved.id}"]`);
+    if(!el) return;
+    const item = el.closest('.item');
+    el.checked = !!saved.checked;
+    item.classList.toggle('checked', !!saved.checked);
+    if(item.dataset.custom === "1"){
+      const ti = item.querySelector('input[type=text]');
+      if(ti) ti.value = saved.label||'';
+    }
+    const ta = item.querySelector('.strat textarea');
+    if(ta) ta.value = saved.strat||'';
+  });
+  updateCounter();
+}
+
+const val = id => document.getElementById(id).value.trim();
+const setVal = (id,v) => document.getElementById(id).value = v;
+
+/* ---------- Local roster storage ---------- */
+const KEY = 'skillsGPS_roster_v1';
+function loadRoster(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+function saveRoster(r){ localStorage.setItem(KEY, JSON.stringify(r)); refreshCount(); }
+function refreshCount(){ document.getElementById('rosterCount').textContent = Object.keys(loadRoster()).length; }
+
+function saveStudent(){
+  const d = collect();
+  if(!d.student){ flash('⚠️ Enter a student name first', true); return; }
+  const r = loadRoster();
+  r[d.student] = d;
+  saveRoster(r);
+  flash('✓ Saved “'+d.student+'”');
+  if(getSyncUrl()){
+    syncUI('sync','Saving to your sheet…');
+    pushUp(d)
+      .then(()=>syncUI('on','☁️ Synced · '+Object.keys(loadRoster()).length+' students in your sheet'))
+      .catch(()=>syncUI('off','Saved on this device, but sheet sync failed — try 🔄 Refresh.'));
+  }
+}
+
+/* ---------- Google Sheet sync ---------- */
+// Baked-in sheet URL: every device syncs automatically, no per-device setup.
+const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbxXDspXyeovuWHOdOOTwhHv_vo9uMTmPNc9eT8P6m78r_JGA2zwFVllFfjSWC_1O6dUpA/exec';
+const SYNC_KEY = 'skillsGPS_syncUrl';
+function getSyncUrl(){ return DEFAULT_SYNC_URL || localStorage.getItem(SYNC_KEY) || ''; }
+
+function syncUI(state, msg){
+  const dot = document.getElementById('syncDot');
+  dot.className = 'dot ' + (state || 'off');
+  if(msg) document.getElementById('syncText').textContent = msg;
+  const connected = !!getSyncUrl();
+  const baked = !!DEFAULT_SYNC_URL;
+  document.getElementById('syncBtn').style.display = (connected || baked) ? 'none' : '';
+  document.getElementById('syncRefresh').style.display = connected ? '' : 'none';
+  document.getElementById('syncDisc').style.display = (connected && !baked) ? '' : 'none';
+}
+
+async function connectSheet(){
+  const url = (prompt('Paste your Google Sheet Web App URL (it ends in /exec):') || '').trim();
+  if(!url) return;
+  if(!/\/exec$/.test(url)){ alert('That URL doesn’t look right — it should end in /exec'); return; }
+  syncUI('sync','Connecting…');
+  try{
+    const r = await fetch(url);
+    const j = await r.json();
+    if(!j || !j.ok) throw new Error('bad response');
+    localStorage.setItem(SYNC_KEY, url);
+    await syncPull(true);
+    flash('☁️ Connected & synced');
+  }catch(e){
+    syncUI('off','Could not connect — check the URL.');
+    alert('Connection failed. Make sure you copied the whole URL (ending in /exec) and that the deployment’s access is set to "Anyone".');
+  }
+}
+
+function disconnectSheet(){
+  if(!confirm('Stop syncing on this device? Your students stay safe in the Google Sheet.')) return;
+  localStorage.removeItem(SYNC_KEY);
+  syncUI('off','Not connected — students save only on this device.');
+}
+
+async function fetchSheet(){
+  const r = await fetch(getSyncUrl());
+  const j = await r.json();
+  if(!j || !j.ok) throw new Error('bad response');
+  const map = {};
+  (j.students || []).forEach(s => { if(s && s.student) map[s.student] = s; });
+  return map;
+}
+async function pushUp(data){
+  await fetch(getSyncUrl(), {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(data)});
+}
+async function pushDelete(name){
+  await fetch(getSyncUrl(), {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'delete', student:name})});
+}
+
+async function syncPull(showStatus){
+  if(!getSyncUrl()){ syncUI('off'); return; }
+  try{
+    if(showStatus) syncUI('sync','Syncing…');
+    const sheet = await fetchSheet();
+    const local = loadRoster();
+    // Upload any students that only exist on this device, so nothing is lost
+    for(const name in local){
+      if(!sheet[name]){ await pushUp(local[name]); sheet[name] = local[name]; }
+    }
+    saveRoster(sheet);
+    if(document.getElementById('dashboardView').style.display !== 'none') renderDashboard();
+    syncUI('on','☁️ Synced · '+Object.keys(sheet).length+' students in your sheet');
+  }catch(e){
+    syncUI('off','Sync error — showing this device’s copy. Try 🔄 Refresh.');
+  }
+}
+
+function openRoster(){
+  const r = loadRoster();
+  const names = Object.keys(r);
+  if(!names.length){ flash('No saved students yet', true); return; }
+  const pick = prompt('Open which student?\n\n' + names.map((n,i)=>`${i+1}. ${n}`).join('\n') + '\n\nType the name exactly:');
+  if(pick && r[pick]){ newPlan(true); restore(r[pick]); flash('Opened “'+pick+'”'); }
+  else if(pick){ flash('Not found: '+pick, true); }
+}
+
+function newPlan(silent, goEditor){
+  ['student','starting','vision','checkpoints'].forEach(id=>setVal(id,''));
+  subject=''; document.getElementById('subjMath').classList.remove('on'); document.getElementById('subjReading').classList.remove('on');
+  buildCols(); updateCounter();
+  if(goEditor) showEditor();
+  if(!silent) flash('New blank plan');
+}
+
+/* ---------- Dashboard (all students in one view) ---------- */
+function showDashboard(){
+  renderDashboard();
+  document.getElementById('editorView').style.display='none';
+  document.getElementById('editorToolbar').style.display='none';
+  document.getElementById('dashboardView').style.display='block';
+  document.getElementById('dashToolbar').style.display='flex';
+  window.scrollTo(0,0);
+}
+function showEditor(){
+  document.getElementById('dashboardView').style.display='none';
+  document.getElementById('dashToolbar').style.display='none';
+  document.getElementById('editorView').style.display='block';
+  document.getElementById('editorToolbar').style.display='flex';
+}
+
+function renderDashboard(){
+  const r = loadRoster();
+  const names = Object.keys(r).sort((a,b)=>a.localeCompare(b));
+  const empty = document.getElementById('dashEmpty');
+  const table = document.getElementById('dashTable');
+  if(!names.length){ empty.style.display='block'; table.innerHTML=''; return; }
+  empty.style.display='none';
+
+  let html = `<thead><tr>
+      <th style="width:18%">Student</th>
+      <th style="width:10%">Subject</th>
+      <th style="width:52%">Skills We're Working On</th>
+      <th style="width:20%">Actions</th>
+    </tr></thead><tbody>`;
+
+  names.forEach(name => {
+    const d = r[name];
+    const focus = (d.items||[]).filter(i=>i.checked && (i.label||'').trim());
+    const subj = d.subject ? `<span class="pill ${d.subject.toLowerCase()}">${d.subject}</span>` : '<span class="pill">—</span>';
+    const skills = focus.length
+      ? focus.map(f => `<span class="skill-chip">${esc(f.label)}${f.strat?`<span class="how">→ ${esc(f.strat)}</span>`:''}</span>`).join('')
+      : `<span class="skill-chip none">No focus areas selected</span>`;
+    const safe = esc(name).replace(/'/g,"&#39;");
+    html += `<tr class="row" onclick="openFromDashboard('${encodeURIComponent(name)}')">
+        <td><span class="dash-name">${esc(name)}</span>${d.starting?`<br><span style="font-size:12px;color:var(--muted)">Start: ${esc(d.starting)}</span>`:''}</td>
+        <td>${subj}</td>
+        <td>${skills}</td>
+        <td class="row-actions" onclick="event.stopPropagation()">
+          <button onclick="openFromDashboard('${encodeURIComponent(name)}')">✏️ Open</button>
+          <button class="btn-del" onclick="deleteStudent('${encodeURIComponent(name)}')">🗑️ Delete</button>
+        </td>
+      </tr>`;
+  });
+  html += `</tbody>`;
+  table.innerHTML = html;
+}
+
+function openFromDashboard(encName){
+  const name = decodeURIComponent(encName);
+  const r = loadRoster();
+  if(!r[name]) return;
+  newPlan(true, true);
+  restore(r[name]);
+  flash('Opened “'+name+'”');
+}
+
+function deleteStudent(encName){
+  const name = decodeURIComponent(encName);
+  if(!confirm('Delete “'+name+'” from this device? This cannot be undone.')) return;
+  const r = loadRoster();
+  delete r[name];
+  saveRoster(r);
+  renderDashboard();
+  document.getElementById('dashBar').textContent = 'Deleted “'+name+'”';
+  setTimeout(()=>document.getElementById('dashBar').textContent='', 3000);
+  if(getSyncUrl()){ pushDelete(name).then(()=>syncUI('on','☁️ Synced · '+Object.keys(loadRoster()).length+' students in your sheet')).catch(()=>{}); }
+}
+
+function exportAllCSV(){
+  const r = loadRoster();
+  const rows = [['Student','Subject','Starting Point','30-Day Vision','Focus Area','Strategy','Checkpoints','Date']];
+  Object.keys(r).sort().forEach(name => {
+    const d = r[name];
+    const focus = (d.items||[]).filter(i=>i.checked && (i.label||'').trim());
+    if(focus.length){
+      focus.forEach(f => rows.push([d.student,d.subject,d.starting,d.vision,f.label,f.strat,d.checkpoints,d.date]));
+    } else {
+      rows.push([d.student,d.subject,d.starting,d.vision,'','',d.checkpoints,d.date]);
+    }
+  });
+  const csv = rows.map(r2 => r2.map(c => '"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'AllStudents_SkillsGPS.csv';
+  a.click();
+  document.getElementById('dashBar').textContent = '⬇️ Exported all students';
+  setTimeout(()=>document.getElementById('dashBar').textContent='', 3000);
+}
+
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+let flashTimer;
+function flash(msg, warn){
+  const b = document.getElementById('savedBar');
+  b.textContent = msg; b.style.color = warn ? '#c0392b' : 'var(--ok)';
+  clearTimeout(flashTimer); flashTimer = setTimeout(()=>b.textContent='', 3500);
+}
+function touch(){ /* hook for future autosave */ }
+
+/* ---------- Share link (encodes whole plan in URL) ---------- */
+function copyShareLink(){
+  const data = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(collect())))));
+  const url = location.origin + location.pathname + '#p=' + data;
+  navigator.clipboard.writeText(url).then(
+    ()=>flash('🔗 Link copied — paste to share'),
+    ()=>{ prompt('Copy this link:', url); }
+  );
+}
+function loadFromHash(){
+  if(location.hash.startsWith('#p=')){
+    try{
+      const json = decodeURIComponent(escape(atob(decodeURIComponent(location.hash.slice(3)))));
+      restore(JSON.parse(json));
+      flash('Loaded shared plan');
+    }catch(e){ console.warn('bad share link', e); }
+  }
+}
+
+/* ---------- CSV export ---------- */
+function exportCSV(){
+  const d = collect();
+  const focus = d.items.filter(i=>i.checked);
+  const rows = [['Student','Subject','Starting Point','30-Day Vision','Focus Area','Strategy','Checkpoints','Date']];
+  if(focus.length){
+    focus.forEach(f => rows.push([d.student,d.subject,d.starting,d.vision,f.label,f.strat,d.checkpoints,d.date]));
+  } else {
+    rows.push([d.student,d.subject,d.starting,d.vision,'','',d.checkpoints,d.date]);
+  }
+  const csv = rows.map(r => r.map(c => '"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (d.student||'student').replace(/[^a-z0-9]/gi,'_') + '_SkillsGPS.csv';
+  a.click();
+  flash('⬇️ CSV downloaded');
+}
+
+/* ---------- Init ---------- */
+(function init(){
+  const now = new Date();
+  document.getElementById('todayLabel').textContent = now.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+  buildCols();
+  updateCounter();
+  refreshCount();
+  loadFromHash();
+  if(getSyncUrl()){ syncUI('on','☁️ Connected — syncing…'); syncPull(true); }
+  else { syncUI('off'); }
+})();
+</script>
+</body>
+</html>
+
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>The Skills GPS — Kumon of Woodbridge/New Haven</title>
