@@ -117,6 +117,34 @@
 
   .saved-bar{font-size:13px; color:var(--ok); font-weight:600; min-height:18px; margin-left:6px;}
 
+  /* Dashboard table */
+  .dash-table{width:100%; border-collapse:collapse; font-size:14px;}
+  .dash-table th{
+    background:var(--navy); color:#fff; text-align:left; padding:10px 12px; font-size:12px;
+    text-transform:uppercase; letter-spacing:.4px; position:sticky; top:0;
+  }
+  .dash-table th:first-child{border-radius:7px 0 0 0;}
+  .dash-table th:last-child{border-radius:0 7px 0 0;}
+  .dash-table td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .dash-table tr.row{cursor:pointer;}
+  .dash-table tr.row:hover td{background:#f3f8fd;}
+  .dash-name{font-weight:700; color:var(--navy); font-size:15px;}
+  .pill{
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px;
+    background:#e8eef6; color:var(--navy); margin-right:4px;
+  }
+  .pill.math{background:#e6f0fb; color:#225a96;}
+  .pill.reading{background:#fdeee6; color:#a85a2a;}
+  .skill-chip{
+    display:block; margin:3px 0; padding:6px 9px; background:var(--focus);
+    border:1px solid var(--focus-border); border-radius:6px; font-size:13px;
+  }
+  .skill-chip .how{display:block; font-size:11px; color:var(--muted); margin-top:1px;}
+  .skill-chip.none{background:#f6f7f9; border-color:var(--line); color:var(--muted); font-style:italic;}
+  .row-actions{white-space:nowrap;}
+  .row-actions button{padding:5px 9px; font-size:12px; margin:0 2px;}
+  .btn-del:hover{border-color:#c0392b; color:#c0392b;}
+
   @media (max-width:760px){
     .student-grid{grid-template-columns:1fr;}
     .cols{grid-template-columns:1fr;}
@@ -135,6 +163,10 @@
     .col:has(.item.checked) {}
     header.app{background:var(--navy) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .item.checked{background:var(--focus) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .dash-table th{background:var(--navy) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .skill-chip{background:var(--focus) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .row-actions{display:none !important;}
+    .dash-table tr{break-inside:avoid;}
   }
 </style>
 </head>
@@ -149,9 +181,9 @@
     <div class="center-name">Kumon of Woodbridge / New Haven<br><span id="todayLabel"></span></div>
   </header>
 
-  <div class="toolbar">
+  <div class="toolbar" id="editorToolbar">
     <button class="primary" onclick="saveStudent()">💾 Save Student</button>
-    <button onclick="openRoster()">📂 Open Saved (<span id="rosterCount">0</span>)</button>
+    <button onclick="showDashboard()">👥 All Students (<span id="rosterCount">0</span>)</button>
     <button onclick="newPlan()">➕ New / Clear</button>
     <button onclick="copyShareLink()">🔗 Copy Share Link</button>
     <button onclick="window.print()">🖨️ Print / Save PDF</button>
@@ -159,6 +191,15 @@
     <span class="saved-bar" id="savedBar"></span>
   </div>
 
+  <div class="toolbar" id="dashToolbar" style="display:none;">
+    <button class="primary" onclick="showEditor()">✏️ Back to Editor</button>
+    <button onclick="newPlan(false, true)">➕ New Student</button>
+    <button onclick="window.print()">🖨️ Print This View</button>
+    <button class="ghost" onclick="exportAllCSV()">⬇️ Export All (CSV)</button>
+    <span class="saved-bar" id="dashBar"></span>
+  </div>
+
+  <div id="editorView">
   <!-- Student header -->
   <div class="card">
     <div class="student-grid">
@@ -220,6 +261,21 @@
       <div class="opt"><span class="num">4</span>Homework handoff — walk through tomorrow's work + a goal.</div>
       <div class="opt"><span class="num">5</span>Close with the parent — share what went well, next steps.</div>
       <div class="opt"><span class="num">6</span>Check one homework completion on 2nd class.</div>
+    </div>
+  </div>
+  </div><!-- /editorView -->
+
+  <!-- Dashboard: all students in one view -->
+  <div id="dashboardView" style="display:none;">
+    <div class="card">
+      <h2 style="margin-bottom:10px;">👥 All Students — Skills In Progress</h2>
+      <p class="hint">Everyone you've saved, with the focus skills you're working on. Click a row to open and edit.</p>
+      <div id="dashEmpty" style="display:none; color:var(--muted); padding:18px 4px;">
+        No students saved yet. Go to the editor, fill one in, and click <b>💾 Save Student</b>.
+      </div>
+      <div id="dashTableWrap" style="overflow-x:auto;">
+        <table class="dash-table" id="dashTable"></table>
+      </div>
     </div>
   </div>
 
@@ -410,12 +466,110 @@ function openRoster(){
   else if(pick){ flash('Not found: '+pick, true); }
 }
 
-function newPlan(silent){
+function newPlan(silent, goEditor){
   ['student','starting','vision','checkpoints'].forEach(id=>setVal(id,''));
   subject=''; document.getElementById('subjMath').classList.remove('on'); document.getElementById('subjReading').classList.remove('on');
   buildCols(); updateCounter();
+  if(goEditor) showEditor();
   if(!silent) flash('New blank plan');
 }
+
+/* ---------- Dashboard (all students in one view) ---------- */
+function showDashboard(){
+  renderDashboard();
+  document.getElementById('editorView').style.display='none';
+  document.getElementById('editorToolbar').style.display='none';
+  document.getElementById('dashboardView').style.display='block';
+  document.getElementById('dashToolbar').style.display='flex';
+  window.scrollTo(0,0);
+}
+function showEditor(){
+  document.getElementById('dashboardView').style.display='none';
+  document.getElementById('dashToolbar').style.display='none';
+  document.getElementById('editorView').style.display='block';
+  document.getElementById('editorToolbar').style.display='flex';
+}
+
+function renderDashboard(){
+  const r = loadRoster();
+  const names = Object.keys(r).sort((a,b)=>a.localeCompare(b));
+  const empty = document.getElementById('dashEmpty');
+  const table = document.getElementById('dashTable');
+  if(!names.length){ empty.style.display='block'; table.innerHTML=''; return; }
+  empty.style.display='none';
+
+  let html = `<thead><tr>
+      <th style="width:18%">Student</th>
+      <th style="width:10%">Subject</th>
+      <th style="width:52%">Skills We're Working On</th>
+      <th style="width:20%">Actions</th>
+    </tr></thead><tbody>`;
+
+  names.forEach(name => {
+    const d = r[name];
+    const focus = (d.items||[]).filter(i=>i.checked && (i.label||'').trim());
+    const subj = d.subject ? `<span class="pill ${d.subject.toLowerCase()}">${d.subject}</span>` : '<span class="pill">—</span>';
+    const skills = focus.length
+      ? focus.map(f => `<span class="skill-chip">${esc(f.label)}${f.strat?`<span class="how">→ ${esc(f.strat)}</span>`:''}</span>`).join('')
+      : `<span class="skill-chip none">No focus areas selected</span>`;
+    const safe = esc(name).replace(/'/g,"&#39;");
+    html += `<tr class="row" onclick="openFromDashboard('${encodeURIComponent(name)}')">
+        <td><span class="dash-name">${esc(name)}</span>${d.starting?`<br><span style="font-size:12px;color:var(--muted)">Start: ${esc(d.starting)}</span>`:''}</td>
+        <td>${subj}</td>
+        <td>${skills}</td>
+        <td class="row-actions" onclick="event.stopPropagation()">
+          <button onclick="openFromDashboard('${encodeURIComponent(name)}')">✏️ Open</button>
+          <button class="btn-del" onclick="deleteStudent('${encodeURIComponent(name)}')">🗑️ Delete</button>
+        </td>
+      </tr>`;
+  });
+  html += `</tbody>`;
+  table.innerHTML = html;
+}
+
+function openFromDashboard(encName){
+  const name = decodeURIComponent(encName);
+  const r = loadRoster();
+  if(!r[name]) return;
+  newPlan(true, true);
+  restore(r[name]);
+  flash('Opened “'+name+'”');
+}
+
+function deleteStudent(encName){
+  const name = decodeURIComponent(encName);
+  if(!confirm('Delete “'+name+'” from this device? This cannot be undone.')) return;
+  const r = loadRoster();
+  delete r[name];
+  saveRoster(r);
+  renderDashboard();
+  document.getElementById('dashBar').textContent = 'Deleted “'+name+'”';
+  setTimeout(()=>document.getElementById('dashBar').textContent='', 3000);
+}
+
+function exportAllCSV(){
+  const r = loadRoster();
+  const rows = [['Student','Subject','Starting Point','30-Day Vision','Focus Area','Strategy','Checkpoints','Date']];
+  Object.keys(r).sort().forEach(name => {
+    const d = r[name];
+    const focus = (d.items||[]).filter(i=>i.checked && (i.label||'').trim());
+    if(focus.length){
+      focus.forEach(f => rows.push([d.student,d.subject,d.starting,d.vision,f.label,f.strat,d.checkpoints,d.date]));
+    } else {
+      rows.push([d.student,d.subject,d.starting,d.vision,'','',d.checkpoints,d.date]);
+    }
+  });
+  const csv = rows.map(r2 => r2.map(c => '"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'AllStudents_SkillsGPS.csv';
+  a.click();
+  document.getElementById('dashBar').textContent = '⬇️ Exported all students';
+  setTimeout(()=>document.getElementById('dashBar').textContent='', 3000);
+}
+
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 let flashTimer;
 function flash(msg, warn){
