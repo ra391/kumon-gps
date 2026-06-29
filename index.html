@@ -117,6 +117,19 @@
 
   .saved-bar{font-size:13px; color:var(--ok); font-weight:600; min-height:18px; margin-left:6px;}
 
+  /* Sync bar */
+  .syncbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; margin-bottom:14px; font-size:13px;
+  }
+  .dot{width:11px; height:11px; border-radius:50%; background:#c0392b; flex-shrink:0;}
+  .dot.on{background:var(--ok);}
+  .dot.sync{background:#e6a700; animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:.35;}}
+  #syncText{color:var(--ink);}
+  .syncbar button{padding:6px 11px; font-size:12px;}
+
   /* Dashboard table */
   .dash-table{width:100%; border-collapse:collapse; font-size:14px;}
   .dash-table th{
@@ -197,6 +210,15 @@
     <button onclick="window.print()">🖨️ Print This View</button>
     <button class="ghost" onclick="exportAllCSV()">⬇️ Export All (CSV)</button>
     <span class="saved-bar" id="dashBar"></span>
+  </div>
+
+  <!-- Sync status bar (shown in both views) -->
+  <div class="syncbar" id="syncbar">
+    <span id="syncDot" class="dot off"></span>
+    <span id="syncText">Not connected — students save only on this device.</span>
+    <button id="syncBtn" onclick="connectSheet()">☁️ Connect Google Sheet</button>
+    <button id="syncRefresh" onclick="syncPull(true)" style="display:none;">🔄 Refresh</button>
+    <button id="syncDisc" class="ghost" onclick="disconnectSheet()" style="display:none;">Disconnect</button>
   </div>
 
   <div id="editorView">
@@ -455,6 +477,83 @@ function saveStudent(){
   r[d.student] = d;
   saveRoster(r);
   flash('✓ Saved “'+d.student+'”');
+  if(getSyncUrl()){
+    syncUI('sync','Saving to your sheet…');
+    pushUp(d)
+      .then(()=>syncUI('on','☁️ Synced · '+Object.keys(loadRoster()).length+' students in your sheet'))
+      .catch(()=>syncUI('off','Saved on this device, but sheet sync failed — try 🔄 Refresh.'));
+  }
+}
+
+/* ---------- Google Sheet sync ---------- */
+const SYNC_KEY = 'skillsGPS_syncUrl';
+function getSyncUrl(){ return localStorage.getItem(SYNC_KEY) || ''; }
+
+function syncUI(state, msg){
+  const dot = document.getElementById('syncDot');
+  dot.className = 'dot ' + (state || 'off');
+  if(msg) document.getElementById('syncText').textContent = msg;
+  const connected = !!getSyncUrl();
+  document.getElementById('syncBtn').style.display = connected ? 'none' : '';
+  document.getElementById('syncRefresh').style.display = connected ? '' : 'none';
+  document.getElementById('syncDisc').style.display = connected ? '' : 'none';
+}
+
+async function connectSheet(){
+  const url = (prompt('Paste your Google Sheet Web App URL (it ends in /exec):') || '').trim();
+  if(!url) return;
+  if(!/\/exec$/.test(url)){ alert('That URL doesn’t look right — it should end in /exec'); return; }
+  syncUI('sync','Connecting…');
+  try{
+    const r = await fetch(url);
+    const j = await r.json();
+    if(!j || !j.ok) throw new Error('bad response');
+    localStorage.setItem(SYNC_KEY, url);
+    await syncPull(true);
+    flash('☁️ Connected & synced');
+  }catch(e){
+    syncUI('off','Could not connect — check the URL.');
+    alert('Connection failed. Make sure you copied the whole URL (ending in /exec) and that the deployment’s access is set to "Anyone".');
+  }
+}
+
+function disconnectSheet(){
+  if(!confirm('Stop syncing on this device? Your students stay safe in the Google Sheet.')) return;
+  localStorage.removeItem(SYNC_KEY);
+  syncUI('off','Not connected — students save only on this device.');
+}
+
+async function fetchSheet(){
+  const r = await fetch(getSyncUrl());
+  const j = await r.json();
+  if(!j || !j.ok) throw new Error('bad response');
+  const map = {};
+  (j.students || []).forEach(s => { if(s && s.student) map[s.student] = s; });
+  return map;
+}
+async function pushUp(data){
+  await fetch(getSyncUrl(), {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(data)});
+}
+async function pushDelete(name){
+  await fetch(getSyncUrl(), {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'delete', student:name})});
+}
+
+async function syncPull(showStatus){
+  if(!getSyncUrl()){ syncUI('off'); return; }
+  try{
+    if(showStatus) syncUI('sync','Syncing…');
+    const sheet = await fetchSheet();
+    const local = loadRoster();
+    // Upload any students that only exist on this device, so nothing is lost
+    for(const name in local){
+      if(!sheet[name]){ await pushUp(local[name]); sheet[name] = local[name]; }
+    }
+    saveRoster(sheet);
+    if(document.getElementById('dashboardView').style.display !== 'none') renderDashboard();
+    syncUI('on','☁️ Synced · '+Object.keys(sheet).length+' students in your sheet');
+  }catch(e){
+    syncUI('off','Sync error — showing this device’s copy. Try 🔄 Refresh.');
+  }
 }
 
 function openRoster(){
@@ -545,6 +644,7 @@ function deleteStudent(encName){
   renderDashboard();
   document.getElementById('dashBar').textContent = 'Deleted “'+name+'”';
   setTimeout(()=>document.getElementById('dashBar').textContent='', 3000);
+  if(getSyncUrl()){ pushDelete(name).then(()=>syncUI('on','☁️ Synced · '+Object.keys(loadRoster()).length+' students in your sheet')).catch(()=>{}); }
 }
 
 function exportAllCSV(){
@@ -625,6 +725,8 @@ function exportCSV(){
   updateCounter();
   refreshCount();
   loadFromHash();
+  if(getSyncUrl()){ syncUI('on','☁️ Connected — syncing…'); syncPull(true); }
+  else { syncUI('off'); }
 })();
 </script>
 </body>
